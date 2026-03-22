@@ -1,0 +1,79 @@
+<app-toolbar></app-toolbar>
+<div class="container text-center">
+    <h4>Mis Pedidos</h4>
+    <h2 *ngIf="pedidosTotalesUsu.length == 0">Aún no ha realizado ningún pedido</h2>
+    <div class="card-header">
+        <ul class="nav nav-tabs">
+            <li class="nav-item" [ngClass]="{'optionactive': mostrarTablaTodos}">
+                <a class="nav-link" (click)="mostrarTodos()">Todos</a>
+            </li>
+            <li class="nav-item" [ngClass]="{'optionactive': mostrarTablaPendientes}">
+                <a class="nav-link" (click)="mostrarPendientes()">Pendientes de aceptación</a>
+            </li>
+        </ul>
+    </div>
+    <div *ngIf="mostrarTablaTodos">
+        <div *ngFor="let pedido of pagedPedidosTotales">
+            <div class="card mb-4">
+                <div style="display: flex; margin: 2%;">
+                    <h2>Número de pedido: #{{pedido.id}}</h2>
+                    <button class="botonVerPedido" (click)="verDetallePedido(pedido.id)">Ver pedido</button>
+                </div>
+
+                <div style="display: flex; margin: 2%;">
+                    <div style="display: block; margin-right: 8%;">
+                        <h5>Fecha del pedido</h5>
+                        <h5>{{pedido.fechaPedido | date: 'dd-MM-yyyy'}}</h5>
+                    </div>
+                    <div style="display: block; margin-right: 8%;">
+                        <h5>Estado del pedido</h5>
+                        <h5>{{pedido.estadoString}}</h5>
+                    </div>
+                </div>
+                <div style="display: flex; margin: 2%; border-bottom: 1px solid rgba(0, 0, 0, .125); padding-left: 10%;">
+                    <div *ngFor="let al of pedido.listaAlmacenesProducto" style="display: flex;">
+                        <div *ngFor="let prod of al.listaProductos">
+                            <img [src]="'data:image/jpeg;base64,' + prod.photo" alt="Foto del producto" width="150" >
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-left: auto; margin-right: 2%;">
+                    <h5>Total: {{pedido.precioFinal}}€</h5>
+                </div>
+            </div>
+        </div>
+        <mat-paginator [length]="pedidosTotalesUsu.length" [pageSize]="page1Size" [pageSizeOptions]="[2, 4, 8]" showFirstLastButtons></mat-paginator>
+    </div>
+    <div *ngIf="mostrarTablaPendientes">
+        <div *ngFor="let pedido of pedidosNoGestionados">
+            <div class="card mb-4">
+                <div style="display: flex; margin: 2%;">
+                    <h2>Número de pedido: #{{pedido.id}}</h2>
+                    <button class="botonVerPedido" (click)="verDetallePedido(pedido.id)">Ver pedido</button>
+                </div>
+
+                <div style="display: flex; margin: 2%;">
+                    <div style="display: block; margin-right: 8%;">
+                        <h5>Fecha del pedido</h5>
+                        <h5>{{pedido.fechaPedido | date: 'dd-MM-yyyy'}}</h5>
+                    </div>
+                    <div style="display: block; margin-right: 8%;">
+                        <h5>Estado del pedido</h5>
+                        <h5>{{pedido.estadoString}}</h5>
+                    </div>
+                </div>
+                <div style="display: flex; margin: 2%; border-bottom: 1px solid rgba(0, 0, 0, .125); padding-left: 10%;">
+                    <div *ngFor="let al of pedido.listaAlmacenesProducto" style="display: flex;">
+                        <div *ngFor="let prod of al.listaProductos">
+                            <img [src]="'data:image/jpeg;base64,' + prod.photo" alt="Foto del producto" width="150" >
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-left: auto; margin-right: 2%;">
+                    <h5>Total: {{pedido.precioFinal}}€</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

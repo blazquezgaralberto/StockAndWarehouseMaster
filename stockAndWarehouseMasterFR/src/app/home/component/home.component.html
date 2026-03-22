@@ -1,0 +1,25 @@
+<app-toolbar></app-toolbar>
+<div class="home-container" role="main">
+    <div style="position: relative; overflow: hidden;">
+        <owl-carousel-o [options]="customOptions" #carousel>
+            <ng-container *ngFor="let image of images">
+                <ng-template carouselSlide [id]="image.id">
+                    <img [src]="image.url" alt="Image" class="img-fluid">
+                </ng-template>
+            </ng-container>
+        </owl-carousel-o>
+
+        <button class="nav-btn prev-btn" (click)="carousel.prev()">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <button class="nav-btn next-btn" (click)="carousel.next()">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+</div>
+<div class="container text-left">
+    <div *ngIf="isLogged;"><h2>Bienvenido a SAWM, {{username}}</h2></div>
+</div>
+<app-footer></app-footer>
+<router-outlet></router-outlet>

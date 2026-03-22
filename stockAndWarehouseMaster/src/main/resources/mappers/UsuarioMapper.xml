@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        
+<mapper namespace="com.tfgAlberto.stockAndWarehouseMaster.usuarios.mapper.UsuarioMapper">
+
+	<resultMap id="resultMapUsuario" type="com.tfgAlberto.stockAndWarehouseMaster.usuarios.model.Usuario">
+        <id column="ID" property="id" />
+        <result column="NOMBRE" property="nombre" />
+        <result column="USERNAME" property="username" />
+        <result column="CONTRASENA" property="contrasena" />
+        <result column="EMAIL" property="email" />
+        <result column="TELEFONO" property="telefono" />
+        <result column="FECHA_ALTA" property="fechaAlta" />
+        <result column="PHOTO" property="photo" />
+
+        <collection property="roles" ofType="com.tfgAlberto.stockAndWarehouseMaster.usuarios.model.RolUsuario" >
+	        <id column="ROL_ID" property="id"/>
+	        <result column="ROL_NOMBRE" property="name"/>
+	    </collection>
+    </resultMap>
+
+	<insert id="save" parameterType="com.tfgAlberto.stockAndWarehouseMaster.usuarios.model.Usuario">
+        INSERT INTO USUARIOS (NOMBRE, USERNAME, EMAIL, CONTRASENA) VALUES (#{nombre}, #{username}, #{email}, #{contrasena})
+    </insert>
+
+	<insert id="insertUserRole">
+		<selectKey order="BEFORE" keyProperty="id" resultType="long">
+            SELECT currval('seq_usuarios')
+        </selectKey>
+	    INSERT INTO ROLES_USUARIO (USER_ID, ROL_ID) VALUES (#{id}, #{roleId})
+	</insert>
+
+	<insert id="insert" parameterType="com.tfgAlberto.stockAndWarehouseMaster.usuarios.model.Usuario">
+        <selectKey order="BEFORE" keyProperty="id" resultType="long">
+            SELECT nextval('seq_usuarios')
+        </selectKey>
+        INSERT INTO USUARIOS(ID, NOMBRE, NICKNAME, CONTRASENA, CORREO,
+         TELEFONO, FECHA_ALTA, TIPO_ROL)
+        VALUES
+        (#{id}, #{nombre}, #{nickname}, #{contrasena}, #{correo}, #{telefono}, #{fechaAlta},
+         #{tipoRol})
+    </insert>
+
+	<delete id="deleteByRegistro" parameterType="com.tfgAlberto.stockAndWarehouseMaster.usuarios.model.Usuario">
+      	 DELETE
+        FROM USUARIOS
+        WHERE 
+    </delete>
+
+	<select id="findByUsername" resultMap="resultMapUsuario">
+        SELECT * FROM usuarios WHERE USERNAME = #{username}
+    </select>
+    
+    <select id="findDetailsByUsername" resultMap="resultMapUsuario">
+        SELECT ID, NOMBRE, USERNAME, EMAIL, TELEFONO, FECHA_ALTA, PHOTO  FROM usuarios WHERE USERNAME = #{username}
+    </select>
+
+	<select id="findDetailsById" resultMap="resultMapUsuario">
+        SELECT ID, NOMBRE, USERNAME, EMAIL, TELEFONO FROM usuarios WHERE ID = #{idUsuario}
+    </select>
+    
+    <select id="existsByUsername" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM usuarios WHERE USERNAME = #{username}
+    </select>
+
+    <select id="existsByEmail" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM usuarios WHERE EMAIL = #{email}
+    </select>
+
+	<select id="findUsuariosTipo" resultMap="resultMapUsuario">
+        SELECT ID, NOMBRE, USERNAME FROM usuarios u 
+         INNER JOIN ROLES_USUARIO ru ON u.ID = ru.USER_ID
+         WHERE ru.ROL_ID = #{roleId}
+    </select>
+    
+    <select id="findAll" resultMap="resultMapUsuario">
+        SELECT 
+	        U.ID AS ID,
+	        U.NOMBRE AS NOMBRE,
+	        U.USERNAME AS USERNAME,
+	        U.EMAIL AS EMAIL,
+	        U.TELEFONO AS TELEFONO,
+	        U.FECHA_ALTA AS FECHA_ALTA,
+	        RU.ROL_ID AS ROL_ID,
+	        R.NAME AS ROL_NOMBRE
+    	FROM USUARIOS U
+    		LEFT JOIN ROLES_USUARIO RU ON U.ID = RU.USER_ID
+    		LEFT JOIN ROLES R ON RU.ROL_ID = R.ID
+    	ORDER BY U.ID
+    </select>
+    
+    <delete id="delete" parameterType="com.tfgAlberto.stockAndWarehouseMaster.usuarios.model.Usuario">
+        DELETE FROM USUARIOS WHERE id = #{id}
+    </delete>
+   
+   <update id="update"  parameterType="com.tfgAlberto.stockAndWarehouseMaster.usuarios.model.Usuario">
+		UPDATE USUARIOS
+		SET 
+			NOMBRE = #{nombre},
+			USERNAME = #{username},
+			EMAIL = #{email},
+			TELEFONO = #{telefono}
+		WHERE 
+			ID = #{id}
+	</update>
+	
+	<update id="updateWithPhoto"  parameterType="com.tfgAlberto.stockAndWarehouseMaster.usuarios.model.Usuario">
+		UPDATE USUARIOS
+		SET 
+			NOMBRE = #{nombre},
+			USERNAME = #{username},
+			EMAIL = #{email},
+			TELEFONO = #{telefono},
+			PHOTO = #{photo}
+		WHERE 
+			ID = #{id}
+	</update>
+</mapper>

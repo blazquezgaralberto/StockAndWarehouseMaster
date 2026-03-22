@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        
+<mapper namespace="com.tfgAlberto.stockAndWarehouseMaster.pedidos.mapper.PedidoMapper">
+
+	<resultMap id="resultMapPedido" type="com.tfgAlberto.stockAndWarehouseMaster.pedidos.model.Pedido">
+        <id column="ID" property="id" />
+        <result column="NOMBRE" property="nombre" />
+        <result column="TELEFONO" property="telefono" />
+        <result column="OBSERVACIONES" property="observaciones" />
+        <result column="ID_USUARIO" property="idUsuario" />
+        <result column="ID_CAMION" property="idCamion" />
+        <result column="PRECIO_FINAL" property="precioFinal" />
+        <result column="FECHA_PEDIDO" property="fechaPedido" />
+        <result column="FECHA_ENTREGA" property="fechaEntrega" />
+        <result column="FECHA_DEVOLUCION" property="fechaDevolucion" />
+        <result column="DIRECCION" property="direccionEntrega" />
+		<result column="CODIGO_POSTAL" property="codigoPostal" />
+		<result column="ESTADO" property="estado" />
+		<result column="TIPO_ENVIO" property="tipoEnvio" />
+    </resultMap>
+
+	<insert id="insert" parameterType="com.tfgAlberto.stockAndWarehouseMaster.pedidos.model.Pedido">
+        <selectKey order="BEFORE" keyProperty="id" resultType="long">
+            SELECT nextval('seq_pedidos')
+        </selectKey>
+        INSERT INTO PEDIDOS(ID, NOMBRE, TELEFONO, OBSERVACIONES, ID_USUARIO, ID_CAMION, PRECIO_FINAL, FECHA_PEDIDO, FECHA_ENTREGA,
+         FECHA_DEVOLUCION, DIRECCION, CODIGO_POSTAL, ESTADO, TIPO_ENVIO)
+        VALUES
+        (#{id}, #{nombre}, #{telefono},#{observaciones}, #{idUsuario}, #{idCamion}, #{precioFinal}, #{fechaPedido}, #{fechaEntrega}, #{fechaDevolucion}, #{direccionEntrega},
+         #{codigoPostal}, #{estado}, #{tipoEnvio})
+    </insert>
+
+	<insert id="insertProductosPedido" >
+		<selectKey order="BEFORE" keyProperty="idPedido" resultType="long">
+            SELECT currval('seq_pedidos')
+        </selectKey>
+        INSERT INTO PEDIDOS_PRODUCTOS(PEDIDO_ID, PRODUCTO_ID, CANTIDAD)
+        VALUES(#{idPedido}, #{idProducto}, #{cantidad})
+    </insert>
+    
+    <insert id="insertAlamcenesPedido" >
+		<selectKey order="BEFORE" keyProperty="idPedido" resultType="long">
+            SELECT currval('seq_pedidos')
+        </selectKey>
+        INSERT INTO PEDIDOS_PRODUCTOS_ALMACENES(PEDIDO_ID, ALMACEN_ID, PRODUCTO_ID, CANTIDAD)
+        VALUES(#{idPedido}, #{idAlmacen}, #{idProducto}, #{cantidad})
+    </insert>
+
+	<select id="findAll" resultMap="resultMapPedido">
+        SELECT * FROM PEDIDOS ORDER BY FECHA_PEDIDO
+    </select>
+    
+    <select id="findAllPedidosUsuario" resultMap="resultMapPedido">
+        SELECT * FROM PEDIDOS WHERE ID_USUARIO = #{userId} ORDER BY FECHA_PEDIDO
+    </select>
+
+	<select id="findById" resultMap="resultMapPedido">
+        SELECT * FROM PEDIDOS WHERE id = #{id}
+    </select>
+    
+    <select id="findPedidosAlmacen" resultMap="resultMapPedido">
+        SELECT DISTINCT PED.*
+		FROM PEDIDOS PED
+		JOIN PEDIDOS_PRODUCTOS_ALMACENES PPA ON PED.ID = PPA.PEDIDO_ID
+		WHERE PPA.ALMACEN_ID = #{almacenID}
+    </select>
+
+	<update id="update">
+		UPDATE PEDIDOS
+		SET
+			ESTADO = #{estado},
+			FECHA_ENTREGA = #{fechaEntrega},
+        	FECHA_DEVOLUCION = #{fechaDevolucion}
+		WHERE
+			ID = #{id}
+	</update>
+
+</mapper>

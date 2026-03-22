@@ -1,0 +1,22 @@
+<app-toolbar></app-toolbar>
+<div class="container">
+
+    <div class="row text-center">
+
+        <div class="col-lg-3 col-md-6 mb-4" *ngFor="let producto of pagedProds">
+            <div class="card">
+                <div class="card-img-container">
+                    <img class="card-img-top" [src]="'data:image/jpeg;base64,' + producto.photo" alt="">
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{producto.nombre}}</p>
+                </div>
+                <div class="card-footer">
+                    <a class="btn btn-success" (click)="verProducto(producto)">Ver
+                        producto</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <mat-paginator [length]="productos.length" [pageSize]="pageSize" [pageSizeOptions]="[8, 12, 16]" showFirstLastButtons></mat-paginator>
+</div>

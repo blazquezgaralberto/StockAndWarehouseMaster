@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        
+<mapper namespace="com.tfgAlberto.stockAndWarehouseMaster.camion.mapper.CamionMapper">
+
+	<resultMap id="resultMapCamion" type="com.tfgAlberto.stockAndWarehouseMaster.camion.model.Camion">
+        <id column="ID" property="id" />
+        <result column="MARCA" property="marca" />
+        <result column="MATRICULA" property="matricula" />
+        <result column="CAPACIDAD_CARGA" property="capacidadCarga" />
+        <result column="ESTADO" property="estado" />
+    </resultMap>
+
+	<insert id="insert" parameterType="com.tfgAlberto.stockAndWarehouseMaster.camion.model.Camion">
+        <selectKey order="BEFORE" keyProperty="id" resultType="long">
+            SELECT nextval('seq_camiones')
+        </selectKey>
+        INSERT INTO CAMIONES(ID, MARCA, MATRICULA, CAPACIDAD_CARGA, ESTADO)
+        VALUES
+        (#{id}, #{marca}, #{matricula}, #{capacidadCarga}, #{estado})
+    </insert>
+
+	<update id="update" parameterType="com.tfgAlberto.stockAndWarehouseMaster.camion.model.Camion">
+		UPDATE CAMIONES
+		SET 
+			MARCA = #{marca},
+			MATRICULA = #{matricula},
+			CAPACIDAD_CARGA = #{capacidadCarga},
+			ESTADO = #{estado}
+		WHERE 
+			ID = #{id}
+	</update>
+
+	<select id="findAll" resultMap="resultMapCamion">
+        SELECT * FROM CAMIONES
+    </select>
+    
+    <select id="findById" resultMap="resultMapCamion">
+        SELECT * FROM CAMIONES WHERE id = #{id}
+    </select>
+    
+    <delete id="delete" parameterType="com.tfgAlberto.stockAndWarehouseMaster.camion.model.Camion">
+        DELETE FROM CAMIONES WHERE id = #{id}
+    </delete>
+
+	<select id="getFirstLibre" resultType="com.tfgAlberto.stockAndWarehouseMaster.camion.model.Camion">
+        SELECT * FROM CAMIONES WHERE ESTADO = 12 ORDER BY ID LIMIT 1
+    </select>
+
+	<select id="getPrimerCamionEstadoOcupado" resultType="com.tfgAlberto.stockAndWarehouseMaster.camion.model.Camion">
+        SELECT * FROM CAMIONES WHERE ESTADO = 13 ORDER BY ID LIMIT 1
+    </select>
+
+    <update id="cambiarEstadoCamion" >
+		UPDATE CAMIONES
+		SET
+			ESTADO = #{estado}
+		WHERE
+			ID = #{idCamion}
+	</update>
+
+</mapper>

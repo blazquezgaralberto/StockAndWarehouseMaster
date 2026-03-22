@@ -1,0 +1,77 @@
+<div class="modal-header border-1 justify-content-center text-primary">
+    <div class="column text-center">
+        <h5 class="modal-title" id="modal-title">
+            {{ 'Detalles del Producto' }}
+        </h5>
+    </div>
+</div>
+
+
+<div class="modal-body">
+    <form [formGroup]="form" style="margin-left: 20px;">
+        <div class="form-group">
+            <label for="nombre">Nombre del producto</label>
+            <input type="text" formControlName="nombre" name="nombre" id="nombre" class="form-control" required>
+            <small *ngIf="form.controls.nombre.invalid && form.controls.nombre.touched" class="text-danger">
+                El nombre es obligatorio.
+            </small>
+        </div>
+        <div class="form-group">
+            <label for="precio">Precio</label>
+            <input type="number" formControlName="precio" name="precio" id="precio" class="form-control" required>
+            <small *ngIf="form.controls.precio.invalid && form.controls.precio.touched" class="text-danger">
+                El precio es obligatorio.
+            </small>
+        </div>
+        <div class="form-group">
+            <label for="idFabricante">Fabricante</label>
+            <ng-select [items]="usuariosFabricantes" bindLabel="nombre" bindValue="id" formControlName="idFabricante"
+                placeholder="Seleccione fabricante del producto" id="idFabricante" required>
+            </ng-select>
+            <small *ngIf="form.controls.idFabricante.invalid && form.controls.idFabricante.touched" class="text-danger">
+                Campo obligatorio.
+            </small>
+        </div>
+        <div class="form-group">
+            <label for="idFabricante">Descripción</label>
+            <div class="input-group mb-2">
+                <textarea id="descripcion" class="form-control" formControlName="descripcion" maxlength="1000" style="height: 100px; overflow-y: auto;"></textarea>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="disponible">Disponible</label>
+            <ng-select bindLabel="disponible" formControlName="disponible" placeholder="Seleccione disponibilidad"
+                id="disponible" required>
+                <ng-option [value]="true"> Si</ng-option>
+                <ng-option [value]="false"> No</ng-option>
+            </ng-select>
+            <small *ngIf="form.controls.disponible.invalid && form.controls.disponible.touched" class="text-danger">
+                Campo obligatorio.
+            </small>
+        </div>
+        <div class="form-group">
+            <label for="categoria">Categoria</label>
+            <ng-select [items]="desplegableCategorias" bindLabel="resumen" bindValue="id" formControlName="categoria"
+                placeholder="Seleccione la categoría del producto" id="categoria" required>
+            </ng-select>
+            <small *ngIf="form.controls.categoria.invalid && form.controls.categoria.touched" class="text-danger">
+                Campo obligatorio.
+            </small>
+        </div>
+        <div class="form-group">
+            <label for="imagen">Imagen:</label>
+            <input type="file" class="form-control-file" id="imagen" name="imagen" (change)="onSelectFile($event)">
+        </div>
+    </form>
+</div>
+
+
+<button type="button" class="btn btn-secondary" (click)="cancel()">
+    Cancelar
+</button>
+<button *ngIf="producto.id" type="submit" class="btn btn-primary ms-2" (click)="actualizar()">
+    Actualizar
+</button>
+<button *ngIf="!producto.id" type="submit" class="btn btn-primary ms-2" (click)="guardar()">
+    Guardar
+</button>

@@ -1,0 +1,27 @@
+<div class="modal-header border-1 justify-content-center text-primary">
+    <div class="column text-center">
+        <h5 class="modal-title" id="modal-title">
+            {{ 'Gestión de stock a almacenes' }}
+        </h5>
+    </div>
+</div>
+
+<div class="modal-body">
+    <form [formGroup]="form" style="margin-left: 20px;">
+        <div class="form-group">
+            <label for="cantidadStock">Cantidad de stock a proporcionar</label>
+            <input type="number" formControlName="cantidadStock" name="cantidadStock" id="cantidadStock" class="form-control" required>
+            <div class="form-group">
+                <label for="almacen">Almacén</label>
+                <ng-select [items]="almacenes" bindLabel="nombre" bindValue="id" formControlName="almacen" placeholder="Seleccione almacén" id="almacen" required >
+                </ng-select>
+            </div>
+        </div>
+    </form>
+</div>
+<button type="button" class="btn btn-secondary" (click)="cancel()">
+    Cancelar
+</button>
+<button type="submit" class="btn btn-primary ms-2" (click)="darStock()">
+    Aceptar
+</button>

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        
+<mapper namespace="com.tfgAlberto.stockAndWarehouseMaster.productos.mapper.ProductoMapper">
+
+	<resultMap id="resultMapProducto" type="com.tfgAlberto.stockAndWarehouseMaster.productos.model.Producto">
+        <id column="ID" property="id" />
+        <result column="NOMBRE" property="nombre" />
+        <result column="PRECIO" property="precio" />
+        <result column="STOCK" property="stock" />
+        <result column="CATEGORIA" property="categoria" />
+        <result column="DISPONIBLE" property="disponible" />
+        <result column="ID_FABRICANTE" property="idFabricante" />
+        <result column="PHOTO" property="photo" />
+        <result column="DESCRIPCION" property="descripcion" />
+        
+        <result column="ID_ALMACEN" property="idAlmacen" />
+        <result column="STOCK_ALMACEN" property="stockParaAlmacen" />
+        
+        <result column="CANTIDAD_PRODUCTO_PEDIDO" property="cantidadProductoPedido"/>
+    </resultMap>
+
+	<insert id="insert" parameterType="com.tfgAlberto.stockAndWarehouseMaster.productos.model.Producto">
+        <selectKey order="BEFORE" keyProperty="id" resultType="long">
+            SELECT nextval('seq_pedidos')
+        </selectKey>
+        INSERT INTO PRODUCTOS(ID, NOMBRE, PRECIO, CATEGORIA, DISPONIBLE, ID_FABRICANTE, STOCK, PHOTO, DESCRIPCION)
+        VALUES
+        (#{id}, #{nombre}, #{precio}, #{categoria}, #{disponible}, #{idFabricante}, 0, #{photo}, #{descripcion})
+    </insert>
+
+	<update id="updateConFoto" parameterType="com.tfgAlberto.stockAndWarehouseMaster.productos.model.Producto">
+		UPDATE PRODUCTOS
+		SET 
+			NOMBRE = #{nombre},
+			PRECIO = #{precio},
+			CATEGORIA = #{categoria},
+			DISPONIBLE = #{disponible},
+			ID_FABRICANTE = #{idFabricante},
+			PHOTO = #{photo},
+			DESCRIPCION = #{descripcion}
+		WHERE 
+			ID = #{id}
+	</update>
+	
+	<update id="update" parameterType="com.tfgAlberto.stockAndWarehouseMaster.productos.model.Producto">
+		UPDATE PRODUCTOS
+		SET 
+			NOMBRE = #{nombre},
+			PRECIO = #{precio},
+			CATEGORIA = #{categoria},
+			DISPONIBLE = #{disponible},
+			ID_FABRICANTE = #{idFabricante},
+			DESCRIPCION = #{descripcion}
+		WHERE 
+			ID = #{id}
+	</update>
+
+	<select id="findAll" resultMap="resultMapProducto">
+        SELECT * FROM PRODUCTOS ORDER BY ID
+    </select>
+    
+    <select id="findAllFabrica" resultMap="resultMapProducto">
+        SELECT * FROM PRODUCTOS WHERE ID_FABRICANTE = #{idFabrica} ORDER BY ID
+    </select>
+    
+    <select id="findById" resultMap="resultMapProducto">
+        SELECT * FROM PRODUCTOS WHERE id = #{id}
+    </select>
+
+	<delete id="delete" parameterType="com.tfgAlberto.stockAndWarehouseMaster.productos.model.Producto">
+        DELETE FROM PRODUCTOS WHERE id = #{id}
+    </delete>
+    
+    <select id="existsProductoAlmacen" resultType="boolean">
+		SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END
+        FROM ALMACENES_PRODUCTOS
+        WHERE PRODUCTO_ID = #{idProd} AND ALMACEN_ID = #{idAlm}
+	</select>
+    
+    <update id="cambioStockProducto">
+		UPDATE PRODUCTOS
+		SET STOCK = STOCK + #{stockParaAlmacen}
+		WHERE ID = #{id}
+	</update>
+	
+	<insert id="insertStockProductoAlmacen" parameterType="com.tfgAlberto.stockAndWarehouseMaster.productos.model.Producto">
+        INSERT INTO ALMACENES_PRODUCTOS(PRODUCTO_ID, ALMACEN_ID, STOCK)
+        VALUES
+        (#{id}, #{idAlmacen}, #{stockParaAlmacen})
+    </insert>
+
+	<update id="cambioStockProductoAlmacen">
+		UPDATE ALMACENES_PRODUCTOS
+		SET STOCK = STOCK + #{stockParaAlmacen}
+		WHERE PRODUCTO_ID = #{id} AND ALMACEN_ID = #{idAlmacen}
+	</update>
+	
+	<select id="getStockProducto" resultType="long">
+        SELECT STOCK FROM PRODUCTOS WHERE id = #{id}
+    </select>
+    
+    <select id="findProductosRepartoPedido" resultMap="resultMapProducto">
+        SELECT P.*, PPA.CANTIDAD AS CANTIDAD_PRODUCTO_PEDIDO
+		FROM PRODUCTOS P
+		JOIN PEDIDOS_PRODUCTOS_ALMACENES PPA ON P.ID = PPA.PRODUCTO_ID
+		WHERE PPA.PEDIDO_ID = #{idPedido} AND PPA.ALMACEN_ID = #{idAlmacen}
+    </select>
+    
+	<update id="restarCantidadStockProducto">
+		UPDATE PRODUCTOS
+		SET STOCK = STOCK - #{cantidad}
+		WHERE ID = #{idProd}
+	</update>
+	
+	<update id="restarCantidadStockAlmacen">
+		UPDATE ALMACENES_PRODUCTOS
+		SET STOCK = STOCK - #{cantidad}
+		WHERE PRODUCTO_ID = #{idProd} AND ALMACEN_ID = #{idAlmacen}
+	</update>
+</mapper>

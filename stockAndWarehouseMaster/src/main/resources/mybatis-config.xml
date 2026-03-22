@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+	<typeHandlers>
+    	<typeHandler handler="com/tfgAlberto/stockAndWarehouseMaster/util/GenericTypeHandler"/>
+	</typeHandlers>
+
+	<environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC" />
+            <dataSource type="POOLED">
+                <!-- Configuración de la fuente de datos (DataSource) -->
+                <property name="driver" value="org.postgresql.Driver" />
+                <property name="url" value="jdbc:postgresql://prodiasv21.fis.usal.es:5432/stockandwarehousemaster" />
+                <property name="username" value="postgres" />
+                <property name="password" value="root1234" />
+            </dataSource>
+        </environment>
+    </environments>
+
+	<mappers>
+        <!-- Ruta al archivo XML de mapeo de entidades -->
+        <mapper resource="mappers/AlmacenMapper.xml" />
+        <mapper resource="mappers/CamionMapper.xml" />
+        <mapper resource="mappers/PedidoMapper.xml" />
+        <mapper resource="mappers/ProductoMapper.xml" />
+        <mapper resource="mappers/UsuarioMapper.xml" />
+        <mapper resource="mappers/RolUsuarioMapper.xml" />
+    </mappers>
+
+</configuration>

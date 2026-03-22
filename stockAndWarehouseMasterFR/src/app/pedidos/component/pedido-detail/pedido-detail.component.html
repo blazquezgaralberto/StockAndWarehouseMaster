@@ -1,0 +1,72 @@
+<app-toolbar></app-toolbar>
+<div class="container">
+    <h2>Número de pedido</h2>
+    <h2> #{{pedido.id}}</h2>
+
+    <div style="display: flex; margin: 2%;">
+        <div style="display: block; margin-right: 10%;">
+            <h5>Fecha del pedido</h5>
+            <p>{{pedido.fechaPedido | date: 'dd-MM-yyyy'}}</p>
+        </div>
+
+        <div style="display: block; margin-right: 10%;">
+            <h5>Método de envío</h5>
+            <p>{{pedido.tipoEnvioString}}</p>
+        </div>
+
+        <div style="display: block;" *ngIf="pedido.fechaEntrega">
+            <h5>Entregado</h5>
+            <p>{{pedido.fechaEntrega | date: 'dd-MM-yyyy'}}</p>
+        </div>
+    </div>
+
+    <div class="card" style="align-items: center; margin-bottom: 2%;">
+        <h5>Estado del pedido</h5>
+        <div class="timeline" style="margin-top: 5%; margin-bottom: 5%;">
+            <div class="timeline-item" *ngFor="let estadoItem of estados">
+                <div class="timeline-circle" [ngClass]="{'active': pedido.estado >= estadoItem.numero}">
+                    <i *ngIf="pedido.estado >= estadoItem.numero" class="fa fa-check"></i>
+                </div>
+                <div class="timeline-text">{{ estadoItem.nombre }}</div>
+                <div class="timeline-line" *ngIf="estadoItem.numero < 8"
+                    [ngClass]="{'active-line': pedido.estado >= estadoItem.numero}"></div>
+            </div>
+        </div>
+    </div>
+
+    <div style="border-bottom: 1px solid rgba(0, 0, 0, .125);">
+        <div *ngFor="let al of pedido.listaAlmacenesProducto" style="display: flex;">
+            <h6>Enviado por almacén:<p>{{al.nombre}}</p>
+            </h6>
+            <div style="margin: 2%;">
+                <div *ngFor="let prod of al.listaProductos" style="display: flex;">
+                    <img [src]="'data:image/jpeg;base64,' + prod.photo" alt="Foto del producto" width="150">
+                    <div style="display: block; width: 50%; margin-left: 5%;">
+                        <h6>{{prod.nombre}}</h6>
+                        <p>{{prod.descripcion}}</p>
+                    </div>
+                    <div style="margin-left: 15%; align-self: flex-end;">
+                        {{prod.precio}}€
+                        x{{prod.cantidadProductoPedido}}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <div style="display: flex; justify-content: space-around;">
+        <div style="display: block;">
+            <h5>Dirección de envío</h5>
+            <p>{{pedido.direccionEntrega}}</p>
+            <p>{{pedido.codigoPostal}}</p>
+        </div>
+        <div style="display: block;">
+            <h5>Total</h5>
+            <p>{{pedido.precioFinal}}€</p>
+        </div>
+    </div>
+    <div style="margin: 5%;">
+        <button class="btn btn-outline-info btn-lg" (click)="volverAtras()">Volver</button>
+    </div>
+    
+</div>

@@ -1,0 +1,132 @@
+<app-toolbar></app-toolbar>
+<div class="container">
+
+    <h2 *ngIf="productosCesta.length > 0">Tu cesta ({{productosCesta.length}} artículos)</h2>
+    <h2 *ngIf="productosCesta.length === 0">Tu cesta está vacía</h2>
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-9">
+                    <h5 class="card-title" *ngIf="!isLogged">
+                        *NECESITA INICIAR SESIÓN PARA REALIZAR EL PEDIDO*
+                    </h5>
+                    <h2 class="card-title" *ngIf="isLogged">
+                        DATOS DEL USUARIO
+                    </h2>
+                    <h6 *ngIf="isLogged">Usuario: {{usuarioLoggeado?.nombre}}</h6>
+                    <h6 *ngIf="isLogged">Correo: {{usuarioLoggeado?.email}}</h6>
+
+                    <div *ngIf="desplegableGestionPedido">
+                        <form [formGroup]="form">
+                            <div class="form-group">
+                                <label for="nombre">Nombre del destinatario*</label>
+                                <input type="text" name="nombre" id="nombre" class="form-control"
+                                    formControlName="nombre" required>
+                                <small *ngIf="form.controls.nombre.invalid && form.controls.nombre.touched"
+                                    class="text-danger">
+                                    El nombre es obligatorio.
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="telefono">Teléfono*</label>
+                                <input type="text" name="telefono" id="telefono" class="form-control"
+                                    formControlName="telefono" required>
+                                <small *ngIf="form.controls.telefono.invalid && form.controls.telefono.touched"
+                                    class="text-danger">
+                                    El telefono es obligatorio.
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="direccion">Direccion de envío*</label>
+                                <input type="text" name="direccion" id="direccion" class="form-control"
+                                    formControlName="direccion" required>
+                                <small *ngIf="form.controls.direccion.invalid && form.controls.direccion.touched"
+                                    class="text-danger">
+                                    La dirección es obligatoria.
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="codigoPostal">Codigo Postal*</label>
+                                <input type="number" name="codigoPostal" id="codigoPostal" class="form-control"
+                                    formControlName="codigoPostal" required>
+                                <small *ngIf="form.controls.codigoPostal.invalid && form.controls.codigoPostal.touched"
+                                    class="text-danger">
+                                    El codigo postal es obligatorio.
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="observaciones">Observaciones</label>
+                                <input type="text" name="observaciones" id="observaciones" class="form-control"
+                                    formControlName="observaciones">
+                            </div>
+                            <div class="form-group">
+                                <label>Envío*</label>
+                                <div class="form-check ml-2" style="display: block;">
+                                    <input class="form-check-input" type="radio" id="envioEstandar" value="estandar"
+                                        formControlName="envio">
+                                    <h6 class="form-check-label" >Envío estándar</h6>
+                                    <h6> (Envío el {{envioEstandarFecha | date:'dd/MM/yyyy' }})</h6>
+                                    <h6 class="form-check-label"> Gratis</h6>
+                                </div>
+
+                                <div class="form-check ml-2">
+                                    <input class="form-check-input" type="radio" id="envioRapido" value="rapido"
+                                        formControlName="envio">
+                                    <h6 class="form-check-label">Envío rápido</h6>
+                                    <h6 for=""> (Envío el {{ envioRapidoFecha | date:'dd/MM/yyyy' }})</h6>
+                                    <h6 class="form-check-label"> Gastos de envío</h6>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <h5 class="card-title">
+                        PRODUCTOS
+                    </h5>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col"></th>
+                                <th scope="col">Producto</th>
+                                <th scope="col">Precio</th>
+                                <th scope="col">Cantidad</th>
+                                <th scope="col">Total</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let prod of productosCesta">
+                                <td><img [src]="'data:image/jpeg;base64,' + prod.photo" alt="Foto del producto"
+                                        width="50"></td>
+                                <td>{{prod.nombre}}</td>
+                                <td>{{prod.precio}}€</td>
+                                <td>{{prod.cantidadProductoPedido}}</td>
+                                <td>{{prod.precioCantidadTotal}}€</td>
+                                <td><button class="btn btn-danger" (click)="removeItem(prod)"><i
+                                            class="far fa-trash-alt"></i> Quitar</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="col-lg-3">
+                    <h2 class="card-title">TOTAL</h2>
+
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <h6>Subtotal: {{precioTotal}}€</h6>
+                            <h6>Envío: 0,0€</h6>
+                            <h6 class="card-title">Total(IVA incluido): {{precioTotal}}€</h6>
+                        </li>
+                        <a *ngIf="!desplegableGestionPedido" class="btn btn-secondary" (click)="startOrder()">Realizar
+                            pedido</a>
+                        <button *ngIf="desplegableGestionPedido" type="submit" [disabled]="!form.valid" class="btn btn-info mb-2" 
+                        (click)="confirmarPedido()">Confirmar pedido</button>
+                    </ul>
+
+                    <ngx-paypal *ngIf="form.valid" [config]="payPalConfig"></ngx-paypal>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

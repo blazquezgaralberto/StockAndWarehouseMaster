@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!-- LISTA DE ARCHIVOS SQL SECUENCIALES A DESPLEGAR -->
+    <include file="database/schemas/0001-create-table-roles.sql"/>
+    <include file="database/schemas/0002-create-table-usuarios.sql"/>
+    <include file="database/schemas/0003-create-table-tipo-estados.sql"/>
+    <include file="database/schemas/0004-create-table-utilidades.sql"/>
+    <include file="database/schemas/0006-create-table-almacen.sql"/>
+    <include file="database/schemas/0007-create-table-producto.sql"/>
+    <include file="database/schemas/0008-crete-table-camiones.sql"/>
+    <include file="database/schemas/0009-create-table-pedidos.sql"/>
+    <include file="database/schemas/0011-create-tablas-intermedias.sql"/>
+    
+    <include file="database/data/0005-insert-valores-roles-usuarios.sql"/>
+    <include file="database/data/0010-insert-valores-utilidades.sql"/>
+
+
+</databaseChangeLog>

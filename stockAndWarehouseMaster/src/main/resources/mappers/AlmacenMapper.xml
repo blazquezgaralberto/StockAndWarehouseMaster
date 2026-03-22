@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        
+<mapper namespace="com.tfgAlberto.stockAndWarehouseMaster.almacen.mapper.AlmacenMapper">
+
+	<resultMap id="resultMapAlmacen" type="com.tfgAlberto.stockAndWarehouseMaster.almacen.model.Almacen">
+        <id column="ID" property="id"/>
+        <result column="NOMBRE" property="nombre" />
+        <result column="UBICACION" property="ubicacion" />
+        <result column="ACTIVO" property="activo" />
+        <result column="USER_ID" property="userId" />
+    </resultMap>
+
+    <resultMap id="mapUtilidades" type="com.tfgAlberto.stockAndWarehouseMaster.util.Utilidades">
+        <id column="ID" property="id"/>
+        <result column="RESUMEN" property="resumen" />
+        <result column="TIPO_ESTADO" property="tipoEstado" />
+    </resultMap>
+
+	<select id="find" resultMap="mapUtilidades">
+		SELECT ID, RESUMEN, TIPO_ESTADO
+		FROM UTILIDADES
+		WHERE TIPO_ESTADO = #{tipo}
+	</select>
+
+	<insert id="insert" parameterType="com.tfgAlberto.stockAndWarehouseMaster.almacen.model.Almacen">
+        <selectKey order="BEFORE" keyProperty="id" resultType="long">
+            SELECT nextval('seq_almacen')
+        </selectKey>
+        INSERT INTO ALMACENES(ID, NOMBRE, UBICACION,USER_ID)
+        VALUES
+        (#{id}, #{nombre}, #{ubicacion}, #{userId})
+    </insert>
+
+	<select id="findAllActives" resultMap="resultMapAlmacen">
+        SELECT * FROM ALMACENES WHERE ACTIVO = true ORDER BY ID
+    </select>
+    
+    <select id="findAllComplete" resultMap="resultMapAlmacen">
+        SELECT * FROM ALMACENES ORDER BY ID
+    </select>
+    
+    <select id="findById" resultMap="resultMapAlmacen">
+        SELECT * FROM ALMACENES WHERE id = #{id}
+    </select>
+
+	<select id="findByIdUsuario" resultMap="resultMapAlmacen">
+        SELECT * FROM ALMACENES WHERE USER_ID = #{id}
+    </select>
+    
+	<delete id="delete">
+        DELETE FROM ALMACENES WHERE USER_ID = #{idUsuario}
+    </delete>
+
+	<update id="update" parameterType="com.tfgAlberto.stockAndWarehouseMaster.almacen.model.Almacen">
+		UPDATE ALMACENES
+		SET 
+			NOMBRE = #{nombre},
+			UBICACION = #{ubicacion},
+			ACTIVO = #{activo}
+		WHERE 
+			USER_ID = #{userId}
+	</update>
+
+	<select id="getStockByProductIdAndAlmacenId"  resultType="java.lang.Integer">
+        SELECT stock FROM almacenes_productos WHERE almacen_id = #{almacenId} AND producto_id = #{productId}
+    </select>
+    
+    <select id="getAlmacenesByProductoId" parameterType="java.lang.Long" resultMap="resultMapAlmacen">
+        SELECT * FROM almacenes WHERE id IN (SELECT almacen_id FROM almacenes_productos WHERE producto_id = #{productId})
+    </select>
+    
+    <select id="getAlmacenesWithStockByProductoId" resultMap="resultMapAlmacen">
+        SELECT a.*
+    	FROM ALMACENES a
+    	INNER JOIN ALMACENES_PRODUCTOS ap ON a.ID = ap.ALMACEN_ID
+    	WHERE ap.PRODUCTO_ID = #{id} AND ap.STOCK >= #{cantidad}
+    </select>
+    
+    <select id="findAlmacenesRepartoPedido" resultMap="resultMapAlmacen">
+		SELECT DISTINCT A.*
+		FROM ALMACENES A
+		JOIN PEDIDOS_PRODUCTOS_ALMACENES PPA ON A.ID = PPA.ALMACEN_ID
+		WHERE PPA.PEDIDO_ID = #{idPedido}
+    </select>
+</mapper>

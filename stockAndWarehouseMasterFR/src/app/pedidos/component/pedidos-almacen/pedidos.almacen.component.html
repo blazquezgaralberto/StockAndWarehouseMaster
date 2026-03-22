@@ -1,0 +1,99 @@
+<ngx-spinner type="ball-spin-clockwise">
+    <h3>Esto puede tardar varios segundos...</h3>
+</ngx-spinner>
+<app-toolbar></app-toolbar>
+
+<div class="container" style="width: 80%;">
+    <div class="card-header">
+        <ul class="nav nav-tabs">
+            <li class="nav-item" [ngClass]="{'optionactive': mostrarSinGestion}">
+                <a class="nav-link" (click)="mostrarGestionadosNo()">Pedidos en cola de gestión</a>
+            </li>
+            <li class="nav-item" [ngClass]="{'optionactive': mostrarGestionados}">
+                <a class="nav-link" (click)="mostrarGestionadosSi()">Otros pedidos gestionados</a>
+            </li>
+        </ul>
+    </div>
+    <div *ngIf="mostrarSinGestion">
+        <h4 *ngIf="pedidosAAceptar.length <= 0"> No hay pedidos en la cola de gestión</h4>
+        <div *ngFor="let pedido of pedidosAAceptar" style="border:1px solid rgba(0, 0, 0, .125); margin-bottom: 2%;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Número de pedido:</th>
+                        <th scope="col">Usuario:</th>
+                        <th scope="col">Dirección</th>
+                        <th scope="col">Codigo Postal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#{{pedido.id}}</td>
+                        <td>{{pedido.nombre}}</td>
+                        <td>{{pedido.direccionEntrega}}</td>
+                        <td>{{pedido.codigoPostal}}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="border-bottom: 1px solid rgba(0, 0, 0, .125); margin-left: 2%; margin-right: 2%;">
+                <div *ngFor="let producto of pedido.listaProductos" style="display: flex;">
+                    <img [src]="'data:image/jpeg;base64,' + producto.photo" alt="Foto del producto" width="20%">
+                    <div style="display: block; width: 50%; margin-left: 5%;">
+                        <h6>{{producto.nombre}}</h6>
+                        <p>{{producto.descripcion}}</p>
+                    </div>
+                    <div style="margin-left: 15%; align-self: flex-end;">
+                        {{producto.precio}}€
+                        x{{producto.cantidadProductoPedido}}
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-right: 4%;">
+                    <h5>Total:{{pedido.precioFinal}}€</h5>
+            </div>
+
+            <div class="mt-3" style="display: flex; justify-content: center;">
+                <button type="submit" class="btn btn-outline-success btn-lg" (click)="aceptarPedido(pedido)">
+                    <i class="fa-solid fa-truck"></i> Aceptar Pedido</button>
+            </div>
+        </div>
+    </div>
+    <div *ngIf="mostrarGestionados">
+        <div *ngFor="let pedido of pedidosGestionados" style="border:1px solid rgba(0, 0, 0, .125); margin-bottom: 2%;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Número de pedido:</th>
+                        <th scope="col">Usuario:</th>
+                        <th scope="col">Dirección</th>
+                        <th scope="col">Codigo Postal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#{{pedido.id}}</td>
+                        <td>{{pedido.nombre}}</td>
+                        <td>{{pedido.direccionEntrega}}</td>
+                        <td>{{pedido.codigoPostal}}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="border-bottom: 1px solid rgba(0, 0, 0, .125); margin-left: 2%; margin-right: 2%;">
+                <div *ngFor="let producto of pedido.listaProductos" style="display: flex;">
+                    <img [src]="'data:image/jpeg;base64,' + producto.photo" alt="Foto del producto" width="20%">
+                    <div style="display: block; width: 50%; margin-left: 5%;">
+                        <h6>{{producto.nombre}}</h6>
+                        <p>{{producto.descripcion}}</p>
+                    </div>
+                    <div style="margin-left: 15%; align-self: flex-end;">
+                        {{producto.precio}}€
+                        x{{producto.cantidadProductoPedido}}
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-right: 4%;">
+                <h5>Total:{{pedido.precioFinal}}€</h5>
+        </div>
+        </div>
+    </div>
+</div>

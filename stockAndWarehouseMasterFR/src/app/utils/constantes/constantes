@@ -1,0 +1,4 @@
+export class Constantes {
+    SERVER_URL  = 'http://localhost:8080/stockAndWarehouseMaster';
+    
+}

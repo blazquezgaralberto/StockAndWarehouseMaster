@@ -1,0 +1,64 @@
+<nav class="navbar navbar-expand-lg navbar-dark mb-4">
+    <a class="navbar-logo">
+        <img width="40" alt="Angular Logo" (click)="navigateToHome()" src="assets/img/SAWMlogo.png" />
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto" style="margin-right: 20px;">
+            <li class="navbar-item"><a class="aToolbar" (click)="navigateToHome()" title="inicio"><i
+                        class="fas fa-home"></i> {{'Inicio'}}</a>
+            </li>
+            <li class="navbar-item"><a class="aToolbar" (click)="navigateToCatalogo()"
+                    title="catalogo">{{'Catálogo'}}</a>
+            </li>
+            <li class="navbar-item" *ngIf="isAlmacen || isFabrica"><a class="aToolbar" (click)="navigateToProductos()"
+                    title="productos">{{'Productos'}}</a>
+            </li>
+            <li class="navbar-item" *ngIf="isAlmacen"><a class="aToolbar" (click)="navigateToPedidosAlmacen()"
+                    title="pedidos">{{'Pedidos'}}</a>
+            </li>
+            <li class="navbar-item" *ngIf="isAlmacen"><a class="aToolbar" (click)="navigateToCamiones()"
+                    title="camiones">{{'Camiones'}}</a>
+            </li>
+            <li class="navbar-item dropdown" ngbDropdown *ngIf="isAdmin">
+                <a class="navbar-item dropdown-toggle" id="navbarDropdown" role="button" aria-haspopup="true"
+                    aria-expanded="false" ngbDropdownToggle>
+                    {{'Administración'}}
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdown" ngbDropdownMenu>
+                    <button class="dropdown-item" (click)="navigateToUsuarios()">Usuarios</button>
+                    <button class="dropdown-item" (click)="navigateToProductos()">Productos</button>
+                    <button class="dropdown-item" (click)="navigateToPedidosAlmacen()">Pedidos</button>
+                    <button class="dropdown-item" (click)="navigateToCamiones()">Camiones</button>
+                    <button class="dropdown-item" (click)="navigateToAlmacenes()">Almacenes</button>
+                </div>
+            </li>
+
+            <li class="navbar-item " ngbDropdown *ngIf="isLogged" >
+                <a class="navbar-item dropdown-toggle" id="navbarDropdown" role="button" aria-haspopup="true"
+                    aria-expanded="false" ngbDropdownToggle><i class="fa fa-user" aria-hidden="true"></i>
+                    {{'Cuenta'}}
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdown" ngbDropdownMenu>
+                    <button class="dropdown-item" (click)="navigateToProfile()">Mi cuenta</button>
+                    <button *ngIf="!isAlmacen && !isFabrica" class="dropdown-item" (click)="navigateToPedidos()" >Mis
+                        pedidos</button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" (click)="onLogOut()"><i class="fas fa-door-open"></i>Cerrar
+                        sesión</button>
+                </div>
+            </li>
+            <li class="navbar-item"><a class="fa fa-shopping-cart"  *ngIf="!isAlmacen && !isFabrica" (click)="navigateToCesta()"
+                    ></a></li>
+            <li class="navbar-item mr-7" *ngIf="isAlmacen || isFabrica"></li>
+            <li class="nav-item" *ngIf="!isLogged">
+                <a class="aToolbar" (click)="navigateToLogin()"><i class="fas fa-sign-in-alt"></i> Iniciar
+                    Sesión</a>
+            </li>
+
+        </ul>
+    </div>
+</nav>
