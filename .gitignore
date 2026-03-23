@@ -1,0 +1,75 @@
+# =============================================================================
+# .gitignore - StockAndWarehouseMaster
+# =============================================================================
+
+# Maven
+target/
+*.jar
+*.war
+*.ear
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# VS Code
+.vscode/
+
+# =============================================================================
+# SEGURIDAD CRÍTICA - Estos ficheros NUNCA deben subirse al repositorio
+# =============================================================================
+
+# Variables de entorno con secretos locales
+.env
+.env.local
+.env.development
+.env.production
+*.env
+
+# Ficheros de configuración con credenciales
+application-local.properties
+application-prod.properties
+application-production.properties
+
+# Certificados y claves
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+*.truststore
+
+# Secretos de Kubernetes
+*-secret.yaml
+*-secret.yml
+
+# Terraform state (puede contener secretos)
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Logs (pueden contener datos sensibles)
+logs/
+*.log
+
+# =============================================================================
+# NODE / ANGULAR
+# =============================================================================
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+
+# =============================================================================
+# OS
+# =============================================================================
+.DS_Store
+Thumbs.db
