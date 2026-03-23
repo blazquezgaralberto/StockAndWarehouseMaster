@@ -43,7 +43,7 @@ RUN mvn clean package -DskipTests -B
 # SECURITY: eclipse-temurin es la distribución OpenJDK con soporte activo
 # de seguridad. Alpine reduce la superficie de ataque al mínimo.
 # =============================================================================
-FROM eclipse-temurin:17.0.10_7-jre-alpine3.19
+FROM eclipse-temurin:17-jre-alpine
 
 # METADATOS: trazabilidad de la imagen
 # En producción, estas etiquetas permiten saber de dónde viene cada imagen

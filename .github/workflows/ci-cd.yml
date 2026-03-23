@@ -158,6 +158,10 @@ jobs:
     name: Build imagen + Trivy scan
     runs-on: ubuntu-latest
     needs: test-and-scan
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
 
     steps:
 
@@ -214,22 +218,28 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          # El pipeline FALLA si hay CVEs de severidad HIGH o CRITICAL
-          severity: 'HIGH,CRITICAL'
-          exit-code: '1'
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: 1
           ignore-unfixed: true
 
-      # -----------------------------------------------------------------------
-      # 5. Publicar resultados Trivy en GitHub Security tab
-      # Los CVEs aparecen en: repositorio → Security → Code scanning alerts
-      # -----------------------------------------------------------------------
-      - name: Publicar resultados Trivy en GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Comprobar si existe SARIF
+        id: sarif_check
         if: always()
+        run: |
+          if [ -f trivy-results.sarif ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publicar resultados Trivy en GitHub Security
+        if: always() && steps.sarif_check.outputs.exists == 'true'
+        uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: trivy-results.sarif
+          category: trivy-image
 
       # Rotar caché de Docker (evita que crezca indefinidamente)
       - name: Rotar caché Docker
@@ -253,6 +263,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: read
 
     steps:
 
