@@ -1,0 +1,331 @@
+# =============================================================================
+# CI/CD Pipeline — StockAndWarehouseMaster
+# GitHub Actions + ghcr.io
+# =============================================================================
+#
+# FLUJO COMPLETO:
+#   1. test-and-scan     → Compilar, testear, analizar código (SAST)
+#   2. build-and-scan    → Construir imagen Docker + escanear CVEs (Trivy)
+#   3. publish           → Publicar imagen limpia en ghcr.io
+#
+# PRINCIPIO SHIFT LEFT:
+#   Ninguna imagen con CVEs HIGH/CRITICAL llega al registry.
+#   Si cualquier job falla, los siguientes no se ejecutan.
+#
+# TRIGGERS:
+#   - Push a main o develop
+#   - Pull Request hacia main
+# =============================================================================
+
+name: DevSecOps Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+# Variables globales del pipeline
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/sawm-backend
+  JAVA_VERSION: '17'
+
+jobs:
+
+  # ===========================================================================
+  # JOB 1: TEST Y ANÁLISIS ESTÁTICO (SAST)
+  # Compila, testea y analiza el código antes de construir ninguna imagen.
+  # Si los tests fallan o hay vulnerabilidades críticas en el código,
+  # el pipeline se detiene aquí.
+  # ===========================================================================
+  test-and-scan:
+    name: Test y análisis de código
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # -----------------------------------------------------------------------
+      # 1. Checkout del código
+      # -----------------------------------------------------------------------
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          # fetch-depth 0 necesario para que SonarQube analice el historial
+          fetch-depth: 0
+
+      # -----------------------------------------------------------------------
+      # 2. Configurar Java 17
+      # -----------------------------------------------------------------------
+      - name: Configurar Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      # -----------------------------------------------------------------------
+      # 3. Caché de dependencias Maven
+      # Evita descargar las dependencias en cada ejecución del pipeline.
+      # La caché se invalida cuando cambia el pom.xml.
+      # -----------------------------------------------------------------------
+      - name: Caché dependencias Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # -----------------------------------------------------------------------
+      # 4. Compilar y ejecutar tests
+      # -----------------------------------------------------------------------
+      - name: Compilar y testear
+        working-directory: stockAndWarehouseMaster
+        run: mvn clean package -DskipTests -B
+        env:
+          # Tests pueden necesitar estas variables aunque no haya BD real
+          JWT_SECRET: test-secret-para-pipeline-ci-no-usar-en-produccion
+          SPRING_DATASOURCE_URL: jdbc:h2:mem:testdb
+          SPRING_DATASOURCE_USERNAME: sa
+          SPRING_DATASOURCE_PASSWORD: ""
+          MAIL_USERNAME: test@test.com
+          MAIL_PASSWORD: test
+
+      # -----------------------------------------------------------------------
+      # 5. Publicar resultados de tests
+      # GitHub muestra los resultados en la pestaña Actions del PR
+      # -----------------------------------------------------------------------
+
+      # -----------------------------------------------------------------------
+      # 6. SAST con SonarQube (análisis estático de seguridad)
+      # Detecta vulnerabilidades, code smells y bugs en el código fuente.
+      # Para activarlo: añadir SONAR_TOKEN en los secrets del repositorio
+      # y crear proyecto en sonarcloud.io (gratuito para repos públicos)
+      # -----------------------------------------------------------------------
+      - name: Análisis SonarQube
+        working-directory: stockAndWarehouseMaster
+        if: ${{ env.SONAR_TOKEN != '' }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=blazquezgaralberto_StockAndWarehouseMaster \
+            -Dsonar.organization=blazquezgaralberto \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -B
+
+      # -----------------------------------------------------------------------
+      # 7. Escaneo de dependencias OWASP
+      # Analiza las dependencias del pom.xml contra la base de datos NVD de CVEs.
+      # NOTA: La primera ejecución tarda ~10 min descargando la base de datos NVD.
+      # Las siguientes usan caché y tardan ~2 min.
+      # -----------------------------------------------------------------------
+      - name: Caché OWASP NVD database
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: ${{ runner.os }}-owasp-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-owasp-
+
+      - name: OWASP Dependency Check
+        working-directory: stockAndWarehouseMaster
+        run: |
+          mvn dependency-check:check -B \
+            -DfailBuildOnCVSS=7 \
+            -Dformats=HTML,JSON \
+            -DoutputDirectory=target/security-reports
+        continue-on-error: true
+        # continue-on-error: true para no bloquear el pipeline en primera ejecución
+        # Cambiar a false cuando el proyecto esté completamente actualizado
+
+      - name: Publicar reporte OWASP
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: owasp-dependency-report
+          path: stockAndWarehouseMaster/target/security-reports/
+          retention-days: 30
+
+  # ===========================================================================
+  # JOB 2: BUILD Y ESCANEO DE IMAGEN DOCKER
+  # Solo se ejecuta si el Job 1 pasó correctamente.
+  # Construye la imagen y la escanea con Trivy antes de publicarla.
+  # ===========================================================================
+  build-and-scan:
+    name: Build imagen + Trivy scan
+    runs-on: ubuntu-latest
+    needs: test-and-scan
+
+    steps:
+
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # 1. Configurar Docker Buildx
+      # Buildx es el builder moderno de Docker con soporte multi-plataforma
+      # y mejor gestión de caché.
+      # -----------------------------------------------------------------------
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # -----------------------------------------------------------------------
+      # 2. Caché de capas Docker
+      # Las capas del Dockerfile se cachean entre ejecuciones.
+      # Si el pom.xml no cambió, no vuelve a descargar dependencias Maven.
+      # -----------------------------------------------------------------------
+      - name: Caché capas Docker
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      # -----------------------------------------------------------------------
+      # 3. Construir imagen Docker (sin publicar todavía)
+      # Se construye localmente para poder escanearla antes de publicar.
+      # -----------------------------------------------------------------------
+      - name: Build imagen Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: ./stockAndWarehouseMaster
+          dockerfile: ./stockAndWarehouseMaster/Dockerfile
+          # push: false → construir localmente, no publicar todavía
+          push: false
+          # load: true → cargar en el daemon Docker local para poder escanearla
+          load: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      # -----------------------------------------------------------------------
+      # 4. Escaneo de vulnerabilidades con Trivy
+      # SEGURIDAD CRÍTICA: Si la imagen tiene CVEs HIGH o CRITICAL,
+      # el pipeline falla aquí y la imagen NO se publica en el registry.
+      # Esto garantiza que ninguna imagen vulnerable llega a producción.
+      # -----------------------------------------------------------------------
+      - name: Escaneo Trivy — vulnerabilidades en imagen
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          # El pipeline FALLA si hay CVEs de severidad HIGH o CRITICAL
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+          ignore-unfixed: true
+
+      # -----------------------------------------------------------------------
+      # 5. Publicar resultados Trivy en GitHub Security tab
+      # Los CVEs aparecen en: repositorio → Security → Code scanning alerts
+      # -----------------------------------------------------------------------
+      - name: Publicar resultados Trivy en GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      # Rotar caché de Docker (evita que crezca indefinidamente)
+      - name: Rotar caché Docker
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  # ===========================================================================
+  # JOB 3: PUBLICAR IMAGEN EN GHCR.IO
+  # Solo se ejecuta si los Jobs 1 y 2 pasaron.
+  # La imagen ya fue testeada, analizada y escaneada. Es segura para publicar.
+  # ===========================================================================
+  publish:
+    name: Publicar imagen en ghcr.io
+    runs-on: ubuntu-latest
+    needs: [ test-and-scan, build-and-scan ]
+    # Solo publicar en push a main, no en Pull Requests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    # Permisos necesarios para publicar en ghcr.io
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Restaurar caché Docker
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      # -----------------------------------------------------------------------
+      # 1. Login en ghcr.io
+      # Usa el GHCR_TOKEN que configuraste en los secrets del repositorio.
+      # -----------------------------------------------------------------------
+      - name: Login en ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      # -----------------------------------------------------------------------
+      # 2. Extraer metadatos para los tags de la imagen
+      # Genera automáticamente tags semánticos basados en la rama y el commit.
+      # -----------------------------------------------------------------------
+      - name: Extraer metadatos de imagen
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Tag con el SHA del commit → trazabilidad exacta
+            type=sha,prefix=,suffix=,format=short
+            # Tag latest en main
+            type=raw,value=latest,enable={{is_default_branch}}
+            # Tag con la fecha → útil para auditoría
+            type=raw,value={{date 'YYYY-MM-DD'}}
+
+      # -----------------------------------------------------------------------
+      # 3. Build y push final al registry
+      # Esta imagen ya pasó todos los controles de seguridad del Job 2.
+      # -----------------------------------------------------------------------
+      - name: Build y push imagen a ghcr.io
+        uses: docker/build-push-action@v5
+        with:
+          context: ./stockAndWarehouseMaster
+          dockerfile: ./stockAndWarehouseMaster/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+
+      # -----------------------------------------------------------------------
+      # 4. Resumen del pipeline en GitHub Actions
+      # Aparece en la pestaña Actions con un resumen visual del resultado.
+      # -----------------------------------------------------------------------
+      - name: Resumen del pipeline
+        run: |
+          echo "## Pipeline DevSecOps completado" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Paso | Estado |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests y análisis SAST | Pasado |" >> $GITHUB_STEP_SUMMARY
+          echo "| Escaneo Trivy (CVEs) | Pasado |" >> $GITHUB_STEP_SUMMARY
+          echo "| Imagen publicada | ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Autor:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Rama:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY

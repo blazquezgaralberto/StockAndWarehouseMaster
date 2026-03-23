@@ -12,15 +12,11 @@
 
 # =============================================================================
 # STAGE 1: BUILD
-# Node.js para compilar Angular en modo producción.
-# Este stage se descarta completamente. La imagen final no tiene Node.js.
 # =============================================================================
 FROM node:18.20.3-alpine3.19 AS build
 
 WORKDIR /app
 
-# OPTIMIZACIÓN DE CACHÉ DE CAPAS:
-# Igual que en el backend, primero las dependencias, luego el código.
 COPY package*.json ./
 
 # SECURITY FIX: npm ci en vez de npm install
@@ -32,19 +28,11 @@ COPY package*.json ./
 #   (vector de ataque conocido en supply chain attacks)
 RUN npm ci --ignore-scripts
 
-# Copiamos el código fuente
 COPY . .
-
-# Build en modo producción:
-# - Minificación y tree-shaking (elimina código no usado)
-# - Optimizaciones de rendimiento
-# - Sin source maps (no exponer código fuente en producción)
 RUN npm run build -- --configuration production
 
 # =============================================================================
 # STAGE 2: RUNTIME
-# Nginx para servir los ficheros estáticos.
-# Versión fija de nginx sobre Alpine.
 # =============================================================================
 FROM nginx:1.25.4-alpine3.18
 
@@ -59,30 +47,31 @@ LABEL maintainer="alberto.blazquez@ejemplo.com" \
 # un usuario sin privilegios para los worker processes.
 RUN addgroup -S nginxgroup && \
     adduser -S nginxuser -G nginxgroup && \
-    # Dar permisos sobre los directorios que Nginx necesita
+    mkdir -p /var/cache/nginx /var/run /usr/share/nginx/html && \
+    touch /var/run/nginx.pid && \
     chown -R nginxuser:nginxgroup /var/cache/nginx && \
     chown -R nginxuser:nginxgroup /var/log/nginx && \
     chown -R nginxuser:nginxgroup /etc/nginx/conf.d && \
-    touch /var/run/nginx.pid && \
+    chown -R nginxuser:nginxgroup /usr/share/nginx/html && \
+    chown -R nginxuser:nginxgroup /var/run && \
     chown -R nginxuser:nginxgroup /var/run/nginx.pid
 
-# Copiamos los ficheros estáticos compilados del stage anterior
-# Ajusta 'stock-and-warehouse-master-fr' al nombre real de tu outputPath en angular.json
+# Copiar build Angular
 COPY --from=build --chown=nginxuser:nginxgroup \
      /app/dist/stock-and-warehouse-master-fr \
      /usr/share/nginx/html
 
-# Copiamos la configuración de Nginx con security headers
+# Copiar configuración Nginx
 COPY --chown=nginxuser:nginxgroup nginx.conf /etc/nginx/conf.d/default.conf
 
 USER nginxuser
 
-# Puerto 8080 en vez de 80 (no necesita privilegios root)
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s \
             --timeout=3s \
             --start-period=10s \
             --retries=3 \
-            CMD wget --no-verbose --tries=1 --spider \
-                http://localhost:8080/ || exit 1
+            CMD wget -q -O /dev/null http://localhost:8080/ || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
