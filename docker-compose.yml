@@ -1,0 +1,164 @@
+# =============================================================================
+# docker-compose.yml — StockAndWarehouseMaster
+# =============================================================================
+# USO:
+#   1. Copia .env.example como .env en la raíz del proyecto
+#   2. Rellena los valores reales en .env
+#   3. docker-compose up -d
+#
+# SEGURIDAD:
+#   - Ningún secreto en este fichero. Todo viene del .env (que está en .gitignore)
+#   - Límites de recursos para evitar ataques DoS entre contenedores
+#   - pgAdmin solo accesible desde localhost
+#   - Red interna para comunicación entre servicios
+# =============================================================================
+
+services:
+
+  # ============================================================================
+  # BASE DE DATOS
+  # ============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: sawm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      # SECURITY: solo exponer en localhost, no en todas las interfaces
+      # En producción, quitar este mapeo completamente (acceso solo por red interna)
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sawm-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # Límites de recursos: evita que postgres consuma todos los recursos del host
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # ============================================================================
+  # BACKEND — Spring Boot
+  # ============================================================================
+  backend:
+    build:
+      context: ./stockAndWarehouseMaster
+      dockerfile: Dockerfile
+    container_name: sawm-backend
+    restart: unless-stopped
+    environment:
+      # Base de datos
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # Liquibase
+      SPRING_LIQUIBASE_CHANGE_LOG: classpath:database/db.changelog-master.xml
+      # JWT — generar con: openssl rand -base64 32
+      JWT_SECRET: ${JWT_SECRET}
+      # Mail
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      # Perfil de Spring
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
+    ports:
+      # En producción con Nginx como proxy, este puerto no necesita estar expuesto
+      # Solo para desarrollo/debug
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sawm-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # ============================================================================
+  # FRONTEND — Angular + Nginx
+  # ============================================================================
+  frontend:
+    build:
+      context: ./stockAndWarehouseMasterFR
+      dockerfile: Dockerfile
+    container_name: sawm-frontend
+    restart: unless-stopped
+    ports:
+      - "80:8080"   # Puerto host 80 → contenedor 8080 (Nginx sin root)
+    depends_on:
+      - backend
+    networks:
+      - sawm-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  # ============================================================================
+  # PGADMIN — Solo para desarrollo local
+  # ============================================================================
+  # SECURITY: pgAdmin nunca debe desplegarse en producción.
+  # En desarrollo, solo accesible desde localhost.
+  # Comentar o eliminar este bloque antes de desplegar en cualquier servidor.
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: sawm-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      # SECURITY: solo localhost, nunca 0.0.0.0
+      - "127.0.0.1:5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - sawm-network
+    profiles:
+      # Con 'profiles', pgAdmin solo arranca si lo pides explícitamente:
+      # docker-compose --profile dev up
+      # Un simple 'docker-compose up' NO arranca pgAdmin
+      - dev
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+# ==============================================================================
+# VOLÚMENES
+# ==============================================================================
+volumes:
+  postgres_data:
+    driver: local
+
+# ==============================================================================
+# REDES
+# Red interna para comunicación entre servicios.
+# Los servicios solo son accesibles entre sí por nombre (postgres, backend, frontend).
+# Desde fuera del stack, solo son accesibles los puertos mapeados explícitamente.
+# ==============================================================================
+networks:
+  sawm-network:
+    driver: bridge
